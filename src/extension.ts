@@ -7,15 +7,16 @@ import { TinkerExecutor } from './execution/tinkerExecutor';
 import { LaravelDetector } from './laravel/detector';
 import { FileUtils } from './utils/fileUtils';
 import { ServiceFactory } from './services/serviceFactory';
+import { BlockStateManager } from './state/blockStateManager';
+import { ResultReferenceProcessor } from './state/resultReferenceProcessor';
+import { BlockState } from './interfaces/blockState.interface';
 
-// Output channel for execution results
+// Global services
 let outputChannel: vscode.OutputChannel;
-
-// Diagnostic collection for problems panel
 let diagnosticCollection: vscode.DiagnosticCollection;
-
-// Status bar item
 let statusBarItem: vscode.StatusBarItem;
+let blockStateManager: BlockStateManager;
+let resultReferenceProcessor: ResultReferenceProcessor;
 
 // Extension activation function
 export function activate(context: vscode.ExtensionContext) {
@@ -37,6 +38,13 @@ export function activate(context: vscode.ExtensionContext) {
     statusBarItem.show();
     context.subscriptions.push(statusBarItem);
     
+    // Initialize state manager and result reference processor
+    blockStateManager = new BlockStateManager(context);
+    blockStateManager.loadState().catch(err => {
+        console.error('Failed to load block state:', err);
+    });
+    resultReferenceProcessor = new ResultReferenceProcessor(blockStateManager);
+    
     // Initialize dependencies
     const fileSystem = ServiceFactory.createFileSystem();
     const processExecutor = ServiceFactory.createProcessExecutor();
@@ -48,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Initialize core services
     const codeBlockDetector = new CodeBlockDetector();
-    const codeBlockDecorator = new CodeBlockDecorator();
+    const codeBlockDecorator = new CodeBlockDecorator(blockStateManager);
     const codeExecutor = new CodeExecutor(outputChannel, diagnosticCollection);
     const tinkerExecutor = new TinkerExecutor(
         outputChannel, 
@@ -129,35 +137,55 @@ export function activate(context: vscode.ExtensionContext) {
     async function executeCodeBlock(codeBlock: CodeBlock, document: vscode.TextDocument, editor: vscode.TextEditor) {
         try {
             // Set block status to executing
-            codeBlockDecorator.setBlockStatus(codeBlock.id, 'executing');
+            codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Executing);
             updateDecorations(editor);
             
             // Update status bar to show executing
             statusBarItem.text = "$(sync~spin) Executing code...";
             statusBarItem.tooltip = "Tinker Notebook is executing code";
             
+            // Check for circular references
+            if (resultReferenceProcessor.hasCircularReferences(codeBlock.id, codeBlock.content)) {
+                throw new Error('Circular reference detected in $tinker_outputs references');
+            }
+            
+            // Process content to resolve result references
+            let processedContent = codeBlock.content;
+            if (codeBlock.content.includes('$tinker_outputs.')) {
+                processedContent = resultReferenceProcessor.processContent(codeBlock.content);
+                
+                // Log processed content for debugging
+                outputChannel.appendLine('=== Processed Code with References ===');
+                outputChannel.appendLine(processedContent);
+            }
+            
             // Execute the code based on the type of code block
             let result;
             if (codeBlock.type === 'tinker') {
                 statusBarItem.text = "$(sync~spin) Executing Tinker code...";
-                result = await tinkerExecutor.executeCode(codeBlock.content, document);
+                result = await tinkerExecutor.executeCode(processedContent, document);
                 tinkerExecutor.showResult(result, document, codeBlock.range);
             } else {
                 // Default to PHP execution for 'php' or any other type
                 statusBarItem.text = "$(sync~spin) Executing PHP code...";
-                result = await codeExecutor.executeCode(codeBlock.content);
+                result = await codeExecutor.executeCode(processedContent);
                 codeExecutor.showResult(result, document, codeBlock.range);
             }
             
-            // Update block status based on result
+            // Store the result and update block state
             if (result.error) {
-                codeBlockDecorator.setBlockStatus(codeBlock.id, 'error');
+                codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Error, result);
                 statusBarItem.text = "$(error) Execution failed";
                 statusBarItem.tooltip = `Error: ${String(result.error)}`;
             } else {
-                codeBlockDecorator.setBlockStatus(codeBlock.id, 'success');
+                codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Success, result);
                 statusBarItem.text = "$(check) Execution successful";
                 statusBarItem.tooltip = "Code executed successfully";
+                
+                // Add block ID info to output if it has a custom ID (useful for referencing)
+                if (codeBlock.customId) {
+                    outputChannel.appendLine(`Block ID: ${codeBlock.customId} (can be referenced with $tinker_outputs.${codeBlock.customId})`);
+                }
             }
             
             // Reset status bar after 3 seconds
@@ -171,7 +199,7 @@ export function activate(context: vscode.ExtensionContext) {
             
         } catch (error) {
             // Set block status to error
-            codeBlockDecorator.setBlockStatus(codeBlock.id, 'error');
+            codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Error);
             updateDecorations(editor);
             
             // Update status bar to show error
@@ -217,10 +245,26 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     
+    // Register command to clear all block states
+    const clearBlockStatesCommand = vscode.commands.registerCommand(
+        'tinker-notebook.clearBlockStates',
+        () => {
+            codeBlockDecorator.resetAllBlockStates();
+            
+            // Update decorations for active editor
+            if (vscode.window.activeTextEditor) {
+                updateDecorations(vscode.window.activeTextEditor);
+            }
+            
+            vscode.window.showInformationMessage('All code block states have been reset');
+        }
+    );
+    
     // Add commands to subscriptions
     context.subscriptions.push(executeCodeBlockCommand);
     context.subscriptions.push(executeFromDecoratorCommand);
     context.subscriptions.push(showOutputChannelCommand);
+    context.subscriptions.push(clearBlockStatesCommand);
     context.subscriptions.push(codeBlockDecorator);
 }
 
@@ -228,6 +272,13 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
     // Clean up temporary files
     FileUtils.cleanupTempFiles();
+    
+    // Save block state
+    if (blockStateManager) {
+        blockStateManager.saveState().catch(err => {
+            console.error('Failed to save block state during deactivation:', err);
+        });
+    }
     
     // Dispose of status bar item if it exists
     if (statusBarItem) {

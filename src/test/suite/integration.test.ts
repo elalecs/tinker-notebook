@@ -6,6 +6,7 @@ import * as os from 'os';
 import { CodeBlockDetector } from '../../codeBlock/detector';
 import { CodeBlockDecorator } from '../../codeBlock/decorator';
 import { CodeExecutor } from '../../execution/executor';
+import { BlockState } from '../../interfaces/blockState.interface';
 
 suite('Integration Tests', () => {
     let outputChannel: vscode.OutputChannel;
@@ -64,7 +65,7 @@ suite('Integration Tests', () => {
             executor.showResult(result, document, codeBlocks[0].range);
             
             // Update block status and decorations
-            decorator.setBlockStatus(codeBlocks[0].id, 'success');
+            decorator.setBlockState(codeBlocks[0].id, BlockState.Success);
             decorator.updateDecorations(editor, codeBlocks);
             
         } finally {
@@ -112,7 +113,7 @@ suite('Integration Tests', () => {
             executor.showResult(result, document, codeBlocks[0].range);
             
             // Update block status and decorations
-            decorator.setBlockStatus(codeBlocks[0].id, 'success');
+            decorator.setBlockState(codeBlocks[0].id, BlockState.Success);
             decorator.updateDecorations(editor, codeBlocks);
             
         } finally {

@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { CodeBlockDecorator } from '../../../codeBlock/decorator';
 import { CodeBlock } from '../../../codeBlock/detector';
+import { BlockState } from '../../../interfaces/blockState.interface';
 
 suite('CodeBlockDecorator Tests', () => {
     let decorator: CodeBlockDecorator;
@@ -18,7 +19,7 @@ suite('CodeBlockDecorator Tests', () => {
         const blockId = 'test-block-1';
         
         // Set status to executing
-        decorator.setBlockStatus(blockId, 'executing');
+        decorator.setBlockState(blockId, BlockState.Executing);
         
         // Create a mock code block with the same ID
         const mockBlock: CodeBlock = {
@@ -54,11 +55,11 @@ suite('CodeBlockDecorator Tests', () => {
         const blockId2 = 'test-block-2';
         
         // Set statuses
-        decorator.setBlockStatus(blockId1, 'success');
-        decorator.setBlockStatus(blockId2, 'error');
+        decorator.setBlockState(blockId1, BlockState.Success);
+        decorator.setBlockState(blockId2, BlockState.Error);
         
         // Reset all statuses
-        decorator.resetAllBlockStatus();
+        decorator.resetAllBlockStates();
         
         // Create mock blocks with the same IDs
         const mockBlock1: CodeBlock = {

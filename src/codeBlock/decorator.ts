@@ -1,23 +1,24 @@
 import * as vscode from 'vscode';
 import { CodeBlock } from './detector';
+import { BlockState, BlockStateEntry, IBlockStateManager } from '../interfaces/blockState.interface';
 
 /**
  * Manages decorations for code blocks in the editor
  */
 export class CodeBlockDecorator {
-    private runCodeDecorationType: vscode.TextEditorDecorationType;
+    private notExecutedDecorationType: vscode.TextEditorDecorationType;
     private executingDecorationType: vscode.TextEditorDecorationType;
     private successDecorationType: vscode.TextEditorDecorationType;
     private errorDecorationType: vscode.TextEditorDecorationType;
     
     // Maps to track block status
-    private blockStatusMap: Map<string, 'ready' | 'executing' | 'success' | 'error'> = new Map();
+    private blockStatusMap: Map<string, BlockState> = new Map();
     
-    constructor() {
-        // Create decoration type for "Run Code" button
-        this.runCodeDecorationType = vscode.window.createTextEditorDecorationType({
+    constructor(private stateManager?: IBlockStateManager) {
+        // Create decoration type for "Not Executed" state with run button
+        this.notExecutedDecorationType = vscode.window.createTextEditorDecorationType({
             after: {
-                contentText: 'Run Code',
+                contentText: '▶️ Run Code',
                 backgroundColor: new vscode.ThemeColor('button.background'),
                 color: new vscode.ThemeColor('button.foreground'),
                 margin: '0 0 0 10px',
@@ -27,10 +28,10 @@ export class CodeBlockDecorator {
             rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
         });
         
-        // Create decoration type for executing status
+        // Create decoration type for executing status with stop button
         this.executingDecorationType = vscode.window.createTextEditorDecorationType({
             after: {
-                contentText: 'Executing...',
+                contentText: '⏹️ Executing...',
                 backgroundColor: new vscode.ThemeColor('statusBarItem.warningBackground'),
                 color: new vscode.ThemeColor('statusBarItem.warningForeground'),
                 margin: '0 0 0 10px',
@@ -43,7 +44,7 @@ export class CodeBlockDecorator {
         // Create decoration type for success status
         this.successDecorationType = vscode.window.createTextEditorDecorationType({
             after: {
-                contentText: '✓ Success',
+                contentText: '🟢 Success',
                 backgroundColor: new vscode.ThemeColor('statusBarItem.remoteBackground'),
                 color: new vscode.ThemeColor('statusBarItem.remoteForeground'),
                 margin: '0 0 0 10px',
@@ -56,7 +57,7 @@ export class CodeBlockDecorator {
         // Create decoration type for error status
         this.errorDecorationType = vscode.window.createTextEditorDecorationType({
             after: {
-                contentText: '✗ Error',
+                contentText: '❌ Error',
                 backgroundColor: new vscode.ThemeColor('statusBarItem.errorBackground'),
                 color: new vscode.ThemeColor('statusBarItem.errorForeground'),
                 margin: '0 0 0 10px',
@@ -65,6 +66,14 @@ export class CodeBlockDecorator {
             },
             rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
         });
+        
+        // If a state manager is provided, load block states from it
+        if (this.stateManager) {
+            const states = this.stateManager.getAllStates();
+            states.forEach((stateEntry, blockId) => {
+                this.blockStatusMap.set(blockId, stateEntry.state);
+            });
+        }
     }
     
     /**
@@ -73,59 +82,113 @@ export class CodeBlockDecorator {
      * @param codeBlocks The code blocks to decorate
      */
     public updateDecorations(editor: vscode.TextEditor, codeBlocks: CodeBlock[]): void {
-        const readyDecorations: vscode.DecorationOptions[] = [];
+        const notExecutedDecorations: vscode.DecorationOptions[] = [];
         const executingDecorations: vscode.DecorationOptions[] = [];
         const successDecorations: vscode.DecorationOptions[] = [];
         const errorDecorations: vscode.DecorationOptions[] = [];
         
         for (const block of codeBlocks) {
-            const status = this.blockStatusMap.get(block.id) || 'ready';
+            const state = this.getBlockState(block.id);
             const decorationRange = new vscode.Range(block.range.start, block.range.start);
             
+            // Build hover message
+            let lastExecutionInfo = '';
+            if (this.stateManager) {
+                const stateEntry = this.stateManager.getBlockState(block.id);
+                if (stateEntry?.lastExecutionTime) {
+                    lastExecutionInfo = `\n**Last executed**: ${stateEntry.lastExecutionTime.toLocaleString()}`;
+                    
+                    if (stateEntry.lastResult) {
+                        const executionTimeMs = stateEntry.lastResult.executionTime;
+                        if (executionTimeMs !== undefined) {
+                            lastExecutionInfo += `\n**Execution time**: ${executionTimeMs}ms`;
+                        }
+                    }
+                }
+            }
+            
+            // Create the decoration with appropriate hover details
             const decoration: vscode.DecorationOptions = {
                 range: decorationRange,
                 hoverMessage: new vscode.MarkdownString(
                     `**Language**: ${block.language}\n` +
-                    `**Status**: ${status}\n\n` +
+                    `**ID**: ${block.customId || block.id}\n` +
+                    `**Status**: ${state}${lastExecutionInfo}\n\n` +
                     `Click to execute this code block`
                 )
             };
             
-            switch (status) {
-                case 'executing':
+            // Enable trusted content in hover message if applicable
+            if (decoration.hoverMessage instanceof vscode.MarkdownString) {
+                decoration.hoverMessage.isTrusted = true;
+            }
+            
+            // Add to appropriate decoration array based on state
+            switch (state) {
+                case BlockState.Executing:
                     executingDecorations.push(decoration);
                     break;
-                case 'success':
+                case BlockState.Success:
                     successDecorations.push(decoration);
                     break;
-                case 'error':
+                case BlockState.Error:
                     errorDecorations.push(decoration);
                     break;
                 default:
-                    readyDecorations.push(decoration);
+                    notExecutedDecorations.push(decoration);
                     break;
             }
         }
         
-        editor.setDecorations(this.runCodeDecorationType, readyDecorations);
+        // Apply decorations
+        editor.setDecorations(this.notExecutedDecorationType, notExecutedDecorations);
         editor.setDecorations(this.executingDecorationType, executingDecorations);
         editor.setDecorations(this.successDecorationType, successDecorations);
         editor.setDecorations(this.errorDecorationType, errorDecorations);
     }
     
     /**
-     * Set the status of a code block
+     * Get the state of a code block
      * @param blockId The ID of the code block
-     * @param status The new status
+     * @returns The state of the block
      */
-    public setBlockStatus(blockId: string, status: 'ready' | 'executing' | 'success' | 'error'): void {
-        this.blockStatusMap.set(blockId, status);
+    public getBlockState(blockId: string): BlockState {
+        // First check the local map
+        if (this.blockStatusMap.has(blockId)) {
+            return this.blockStatusMap.get(blockId)!;
+        }
+        
+        // Then check the state manager if available
+        if (this.stateManager) {
+            const stateEntry = this.stateManager.getBlockState(blockId);
+            if (stateEntry) {
+                return stateEntry.state;
+            }
+        }
+        
+        // Default to not executed
+        return BlockState.NotExecuted;
     }
     
     /**
-     * Reset the status of all code blocks to 'ready'
+     * Set the state of a code block
+     * @param blockId The ID of the code block
+     * @param state The new state
+     * @param result Optional execution result
      */
-    public resetAllBlockStatus(): void {
+    public setBlockState(blockId: string, state: BlockState, result?: any): void {
+        this.blockStatusMap.set(blockId, state);
+        
+        // Update state manager if available
+        if (this.stateManager) {
+            this.stateManager.setBlockState(blockId, state, result);
+        }
+    }
+    
+    /**
+     * Reset the state of all code blocks to 'not executed'
+     */
+    public resetAllBlockStates(): void {
         this.blockStatusMap.clear();
     }
     
@@ -133,7 +196,7 @@ export class CodeBlockDecorator {
      * Dispose of all decoration types
      */
     public dispose(): void {
-        this.runCodeDecorationType.dispose();
+        this.notExecutedDecorationType.dispose();
         this.executingDecorationType.dispose();
         this.successDecorationType.dispose();
         this.errorDecorationType.dispose();

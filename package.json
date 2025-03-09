@@ -22,6 +22,14 @@
       {
         "command": "tinker-notebook.executeFromDecorator",
         "title": "Tinker Notebook: Execute Code From Decorator"
+      },
+      {
+        "command": "tinker-notebook.showOutputChannel",
+        "title": "Tinker Notebook: Show Output Channel"
+      },
+      {
+        "command": "tinker-notebook.clearBlockStates",
+        "title": "Tinker Notebook: Reset All Block States"
       }
     ],
     "keybindings": [
