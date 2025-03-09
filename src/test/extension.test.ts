@@ -68,4 +68,15 @@ suite('Extension Activation Tests', () => {
 		// Check if our command is registered
 		assert.ok(commands.includes('tinker-notebook.showOutputChannel'));
 	});
+
+	test('Phase 5 Enhanced Output Formatting commands should be registered', async () => {
+		// Get all available commands
+		const commands = await vscode.commands.getCommands();
+		
+		// Check if our export commands are registered
+		assert.ok(commands.includes('tinker-notebook.exportAsJSON'));
+		assert.ok(commands.includes('tinker-notebook.exportAsCSV'));
+		assert.ok(commands.includes('tinker-notebook.exportAsText'));
+		assert.ok(commands.includes('tinker-notebook.toggleCollapsible'));
+	});
 });

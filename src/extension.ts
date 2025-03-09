@@ -10,6 +10,7 @@ import { ServiceFactory } from './services/serviceFactory';
 import { BlockStateManager } from './state/blockStateManager';
 import { ResultReferenceProcessor } from './state/resultReferenceProcessor';
 import { BlockState } from './interfaces/blockState.interface';
+import { OutputFormatterManager } from './formatting/outputFormatterManager';
 
 // Global services
 let outputChannel: vscode.OutputChannel;
@@ -17,6 +18,7 @@ let diagnosticCollection: vscode.DiagnosticCollection;
 let statusBarItem: vscode.StatusBarItem;
 let blockStateManager: BlockStateManager;
 let resultReferenceProcessor: ResultReferenceProcessor;
+let outputFormatterManager: OutputFormatterManager;
 
 // Extension activation function
 export function activate(context: vscode.ExtensionContext) {
@@ -44,6 +46,9 @@ export function activate(context: vscode.ExtensionContext) {
         console.error('Failed to load block state:', err);
     });
     resultReferenceProcessor = new ResultReferenceProcessor(blockStateManager);
+    
+    // Initialize output formatter manager
+    outputFormatterManager = new OutputFormatterManager(outputChannel);
     
     // Initialize dependencies
     const fileSystem = ServiceFactory.createFileSystem();
@@ -164,12 +169,12 @@ export function activate(context: vscode.ExtensionContext) {
             if (codeBlock.type === 'tinker') {
                 statusBarItem.text = "$(sync~spin) Executing Tinker code...";
                 result = await tinkerExecutor.executeCode(processedContent, document);
-                tinkerExecutor.showResult(result, document, codeBlock.range);
+                outputFormatterManager.showFormattedResult(result, document, codeBlock.range, false);
             } else {
                 // Default to PHP execution for 'php' or any other type
                 statusBarItem.text = "$(sync~spin) Executing PHP code...";
                 result = await codeExecutor.executeCode(processedContent);
-                codeExecutor.showResult(result, document, codeBlock.range);
+                outputFormatterManager.showFormattedResult(result, document, codeBlock.range, true);
             }
             
             // Store the result and update block state
@@ -260,11 +265,44 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     
+    // Register export commands
+    const exportAsJsonCommand = vscode.commands.registerCommand(
+        'tinker-notebook.exportAsJSON',
+        async () => {
+            await outputFormatterManager.exportResult('JSON');
+        }
+    );
+    
+    const exportAsCsvCommand = vscode.commands.registerCommand(
+        'tinker-notebook.exportAsCSV',
+        async () => {
+            await outputFormatterManager.exportResult('CSV');
+        }
+    );
+    
+    const exportAsTextCommand = vscode.commands.registerCommand(
+        'tinker-notebook.exportAsText',
+        async () => {
+            await outputFormatterManager.exportResult('Text');
+        }
+    );
+    
+    const toggleCollapsibleCommand = vscode.commands.registerCommand(
+        'tinker-notebook.toggleCollapsible',
+        () => {
+            outputFormatterManager.toggleCollapsible();
+        }
+    );
+    
     // Add commands to subscriptions
     context.subscriptions.push(executeCodeBlockCommand);
     context.subscriptions.push(executeFromDecoratorCommand);
     context.subscriptions.push(showOutputChannelCommand);
     context.subscriptions.push(clearBlockStatesCommand);
+    context.subscriptions.push(exportAsJsonCommand);
+    context.subscriptions.push(exportAsCsvCommand);
+    context.subscriptions.push(exportAsTextCommand);
+    context.subscriptions.push(toggleCollapsibleCommand);
     context.subscriptions.push(codeBlockDecorator);
 }
 

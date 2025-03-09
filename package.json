@@ -30,6 +30,22 @@
       {
         "command": "tinker-notebook.clearBlockStates",
         "title": "Tinker Notebook: Reset All Block States"
+      },
+      {
+        "command": "tinker-notebook.exportAsJSON",
+        "title": "Tinker Notebook: Export Result as JSON"
+      },
+      {
+        "command": "tinker-notebook.exportAsCSV",
+        "title": "Tinker Notebook: Export Result as CSV"
+      },
+      {
+        "command": "tinker-notebook.exportAsText",
+        "title": "Tinker Notebook: Export Result as Text"
+      },
+      {
+        "command": "tinker-notebook.toggleCollapsible",
+        "title": "Tinker Notebook: Toggle Collapsible Sections"
       }
     ],
     "keybindings": [
