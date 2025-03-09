@@ -2,12 +2,14 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as sinon from 'sinon';
+import * as cp from 'child_process';
 import { TinkerExecutor } from '../../../execution/tinkerExecutor';
 import { ExecutionResult } from '../../../execution/executor';
 import { MockFactory } from '../../testUtils/mockFactory';
 import { IFileSystem } from '../../../interfaces/fileSystem.interface';
 import { IProcessExecutor } from '../../../interfaces/processExecutor.interface';
 import { ILaravelManager } from '../../../interfaces/laravelManager.interface';
+import { LaravelManager } from '../../../laravel/manager';
 
 suite('TinkerExecutor Tests', () => {
     let mockFactory: MockFactory;
@@ -17,16 +19,32 @@ suite('TinkerExecutor Tests', () => {
     let mockFileSystem: IFileSystem;
     let mockProcessExecutor: IProcessExecutor;
     let mockLaravelManager: ILaravelManager;
+    let sandbox: sinon.SinonSandbox;
+    let fsMock: any;
+    let cpMock: any;
     
     setup(() => {
         mockFactory = new MockFactory();
         outputChannel = mockFactory.createMockOutputChannel();
         diagnosticCollection = mockFactory.createMockDiagnosticCollection();
+        sandbox = sinon.createSandbox();
         
         // Create mocks
         mockFileSystem = mockFactory.createMockFileSystem();
         mockProcessExecutor = mockFactory.createMockProcessExecutor();
         mockLaravelManager = mockFactory.createMockLaravelManager();
+        
+        // Create fs and cp mocks
+        fsMock = {
+            existsSync: sandbox.stub().returns(true),
+            mkdirSync: sandbox.stub().returns(undefined),
+            writeFileSync: sandbox.stub().returns(undefined),
+            unlinkSync: sandbox.stub().returns(undefined)
+        };
+        
+        cpMock = {
+            spawn: sandbox.stub()
+        };
         
         // Configure mocks
         (mockLaravelManager.getLaravelProject as sinon.SinonStub).resolves('/workspace/laravel');
@@ -42,6 +60,7 @@ suite('TinkerExecutor Tests', () => {
     
     teardown(() => {
         mockFactory.restore();
+        sandbox.restore();
     });
     
     test('executeCode should throw error if no Laravel project found', async () => {
