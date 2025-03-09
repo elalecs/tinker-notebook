@@ -54,7 +54,7 @@ A lightweight VS Code extension that enables interactive PHP and Laravel Tinker 
 
 ### Instalación Manual
 
-1. Descarga el archivo `.vsix` desde la [página de releases de GitHub](https://github.com/your-username/tinker-notebook/releases)
+1. Descarga el archivo `.vsix` desde la [página de releases de GitHub](https://github.com/elalecs/tinker-notebook/releases)
 2. En VS Code, ve a Extensiones (Ctrl+Shift+X)
 3. Haz clic en el menú "..." en la parte superior derecha del panel de Extensiones
 4. Selecciona "Install from VSIX..."

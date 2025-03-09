@@ -25,7 +25,7 @@ Tinker Notebook is a VS Code extension that brings interactive PHP and Laravel T
 
 #### Manual Installation
 
-1. Download the `.vsix` file from the [GitHub releases page](https://github.com/your-username/tinker-notebook/releases)
+1. Download the `.vsix` file from the [GitHub releases page](https://github.com/elalecs/tinker-notebook/releases)
 2. In VS Code, go to Extensions (Ctrl+Shift+X)
 3. Click the "..." menu in the top-right of the Extensions panel
 4. Select "Install from VSIX..."
@@ -73,7 +73,7 @@ The extension can be configured through VS Code's settings. To access these sett
 
 If you encounter issues not covered here:
 
-1. Check the [GitHub Issues](https://github.com/your-username/tinker-notebook/issues) for similar problems
+1. Check the [GitHub Issues](https://github.com/elalecs/tinker-notebook/issues) for similar problems
 2. Submit a new issue with detailed information about your environment and the problem
 
 ## Basic Usage Tutorial

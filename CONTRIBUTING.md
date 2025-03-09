@@ -20,7 +20,7 @@ For more detailed information about the project architecture, check the implemen
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/tinker-notebook.git
+   git clone https://github.com/elalecs/tinker-notebook.git
    cd tinker-notebook
    ```
 
