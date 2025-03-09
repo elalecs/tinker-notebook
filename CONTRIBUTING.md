@@ -171,6 +171,11 @@ To create a VSIX package for manual distribution or testing:
    vsce package
    ```
 
+4. Install the package:
+   ```bash
+   code --install-extension tinker-notebook-0.1.0.vsix
+   ```
+
 This will create a `.vsix` file in the root directory of the project, named according to the version in `package.json` (e.g., `tinker-notebook-0.1.0.vsix`).
 
 ### Manual Installation
