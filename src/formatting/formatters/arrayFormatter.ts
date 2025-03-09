@@ -117,7 +117,9 @@ export class ArrayFormatter extends BaseFormatter {
         
         for (const pair of pairs) {
             const trimmedPair = pair.trim();
-            if (!trimmedPair) continue;
+            if (!trimmedPair) {
+                continue;
+            }
             
             // Check if it's a key => value pair
             const keyValueMatch = trimmedPair.match(/^(.*?)=>(.*?)$/);
@@ -155,11 +157,17 @@ export class ArrayFormatter extends BaseFormatter {
         }
         
         // Boolean
-        if (value === 'true') return true;
-        if (value === 'false') return false;
+        if (value === 'true') {
+            return true;
+        }
+        if (value === 'false') {
+            return false;
+        }
         
         // Null
-        if (value === 'null' || value === 'NULL') return null;
+        if (value === 'null' || value === 'NULL') {
+            return null;
+        }
         
         // Array
         if (value.startsWith('array(') && value.endsWith(')')) {

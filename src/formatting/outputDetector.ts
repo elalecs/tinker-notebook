@@ -36,11 +36,21 @@ export class OutputDetector {
         try {
             const parsed = JSON.parse(trimmedOutput);
             
-            if (parsed === null) return OutputType.Null;
-            if (typeof parsed === 'boolean') return OutputType.Boolean;
-            if (typeof parsed === 'number') return OutputType.Number;
-            if (Array.isArray(parsed)) return OutputType.Array;
-            if (typeof parsed === 'object') return OutputType.Object;
+            if (parsed === null) {
+                return OutputType.Null;
+            }
+            if (typeof parsed === 'boolean') {
+                return OutputType.Boolean;
+            }
+            if (typeof parsed === 'number') {
+                return OutputType.Number;
+            }
+            if (Array.isArray(parsed)) {
+                return OutputType.Array;
+            }
+            if (typeof parsed === 'object') {
+                return OutputType.Object;
+            }
             
             return OutputType.JSON;
         } catch (e) {

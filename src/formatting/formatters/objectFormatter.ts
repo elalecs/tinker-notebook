@@ -182,7 +182,9 @@ export class ObjectFormatter extends BaseFormatter {
      * @param result The result object to add the property to
      */
     private processPropertyEntry(entry: string, result: any): void {
-        if (!entry) return;
+        if (!entry) {
+            return;
+        }
         
         // Match different styles of PHP property notation
         // 1. ["property"]=>value
@@ -258,11 +260,17 @@ export class ObjectFormatter extends BaseFormatter {
         }
         
         // Boolean
-        if (value === 'true' || value === 'TRUE') return true;
-        if (value === 'false' || value === 'FALSE') return false;
+        if (value === 'true' || value === 'TRUE') {
+            return true;
+        }
+        if (value === 'false' || value === 'FALSE') {
+            return false;
+        }
         
         // Null
-        if (value === 'null' || value === 'NULL') return null;
+        if (value === 'null' || value === 'NULL') {
+            return null;
+        }
         
         // Array (simplified)
         if (value.startsWith('array(') && value.endsWith(')')) {
