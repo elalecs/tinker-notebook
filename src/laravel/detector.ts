@@ -1,11 +1,31 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { IFileSystem } from '../interfaces/fileSystem.interface';
+import { NodeFileSystem } from '../services/nodeFileSystem.service';
 
 /**
  * Class to detect Laravel projects in the workspace
  */
 export class LaravelDetector {
+    // Static instance of file system that can be replaced in tests
+    private static fileSystem: IFileSystem = new NodeFileSystem();
+    
+    /**
+     * Set the file system to use for detection
+     * @param fs File system implementation
+     */
+    public static setFileSystem(fs: IFileSystem): void {
+        LaravelDetector.fileSystem = fs;
+    }
+    
+    /**
+     * Get the current file system implementation
+     * @returns File system implementation
+     */
+    public static getFileSystem(): IFileSystem {
+        return LaravelDetector.fileSystem;
+    }
     /**
      * Check if a directory is a Laravel project
      * @param directoryPath Path to the directory to check
@@ -14,18 +34,18 @@ export class LaravelDetector {
     public static isLaravelProject(directoryPath: string): boolean {
         // Check if artisan file exists
         const artisanPath = path.join(directoryPath, 'artisan');
-        if (!fs.existsSync(artisanPath)) {
+        if (!this.fileSystem.existsSync(artisanPath)) {
             return false;
         }
 
         // Check if composer.json exists and contains laravel/framework
         const composerJsonPath = path.join(directoryPath, 'composer.json');
-        if (!fs.existsSync(composerJsonPath)) {
+        if (!this.fileSystem.existsSync(composerJsonPath)) {
             return false;
         }
 
         try {
-            const composerJson = JSON.parse(fs.readFileSync(composerJsonPath, 'utf8'));
+            const composerJson = JSON.parse(this.fileSystem.readFileSync(composerJsonPath, 'utf8').toString());
             const hasLaravelDependency = 
                 (composerJson.require && composerJson.require['laravel/framework']) ||
                 (composerJson.name === 'laravel/laravel');
@@ -59,6 +79,8 @@ export class LaravelDetector {
 
             // Check immediate subdirectories (common for multi-project workspaces)
             try {
+                // Note: we have to use native fs here because our IFileSystem interface 
+                // doesn't include directory listing methods like readdirSync
                 const items = fs.readdirSync(folderPath);
                 for (const item of items) {
                     const itemPath = path.join(folderPath, item);

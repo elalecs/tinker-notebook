@@ -6,6 +6,7 @@ import { CodeExecutor } from './execution/executor';
 import { TinkerExecutor } from './execution/tinkerExecutor';
 import { LaravelDetector } from './laravel/detector';
 import { FileUtils } from './utils/fileUtils';
+import { ServiceFactory } from './services/serviceFactory';
 
 // Output channel for execution results
 let outputChannel: vscode.OutputChannel;
@@ -36,11 +37,26 @@ export function activate(context: vscode.ExtensionContext) {
     statusBarItem.show();
     context.subscriptions.push(statusBarItem);
     
+    // Initialize dependencies
+    const fileSystem = ServiceFactory.createFileSystem();
+    const processExecutor = ServiceFactory.createProcessExecutor();
+    const laravelManager = ServiceFactory.createLaravelManager(
+        vscode.workspace.workspaceFolders,
+        fileSystem,
+        outputChannel
+    );
+    
     // Initialize core services
     const codeBlockDetector = new CodeBlockDetector();
     const codeBlockDecorator = new CodeBlockDecorator();
     const codeExecutor = new CodeExecutor(outputChannel, diagnosticCollection);
-    const tinkerExecutor = new TinkerExecutor(outputChannel, diagnosticCollection);
+    const tinkerExecutor = new TinkerExecutor(
+        outputChannel, 
+        diagnosticCollection,
+        laravelManager,
+        fileSystem,
+        processExecutor
+    );
     
     // Clean up temporary files on startup
     FileUtils.cleanupTempFiles();

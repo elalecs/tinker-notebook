@@ -1,84 +1,47 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as sinon from 'sinon';
-import * as cp from 'child_process';
 import { TinkerExecutor } from '../../../execution/tinkerExecutor';
-import { LaravelManager } from '../../../laravel/manager';
 import { ExecutionResult } from '../../../execution/executor';
-
-// Create a wrapper for fs to allow stubbing
-const fsWrapper = {
-    existsSync: fs.existsSync,
-    mkdirSync: fs.mkdirSync,
-    writeFileSync: fs.writeFileSync,
-    unlinkSync: fs.unlinkSync
-};
-
-// Create a wrapper for child_process to allow stubbing
-const cpWrapper = {
-    spawn: cp.spawn
-};
+import { MockFactory } from '../../testUtils/mockFactory';
+import { IFileSystem } from '../../../interfaces/fileSystem.interface';
+import { IProcessExecutor } from '../../../interfaces/processExecutor.interface';
+import { ILaravelManager } from '../../../interfaces/laravelManager.interface';
 
 suite('TinkerExecutor Tests', () => {
+    let mockFactory: MockFactory;
     let executor: TinkerExecutor;
     let outputChannel: vscode.OutputChannel;
     let diagnosticCollection: vscode.DiagnosticCollection;
-    let sandbox: sinon.SinonSandbox;
-    let originalFs: PropertyDescriptor | undefined;
-    let originalCp: PropertyDescriptor | undefined;
+    let mockFileSystem: IFileSystem;
+    let mockProcessExecutor: IProcessExecutor;
+    let mockLaravelManager: ILaravelManager;
     
     setup(() => {
-        // Create sandbox for managing stubs
-        sandbox = sinon.createSandbox();
+        mockFactory = new MockFactory();
+        outputChannel = mockFactory.createMockOutputChannel();
+        diagnosticCollection = mockFactory.createMockDiagnosticCollection();
         
-        // Save original fs descriptor
-        originalFs = Object.getOwnPropertyDescriptor(global, 'fs');
+        // Create mocks
+        mockFileSystem = mockFactory.createMockFileSystem();
+        mockProcessExecutor = mockFactory.createMockProcessExecutor();
+        mockLaravelManager = mockFactory.createMockLaravelManager();
         
-        // Save original cp descriptor
-        originalCp = Object.getOwnPropertyDescriptor(global, 'cp');
+        // Configure mocks
+        (mockLaravelManager.getLaravelProject as sinon.SinonStub).resolves('/workspace/laravel');
         
-        // Create mock output channel
-        outputChannel = {
-            name: 'Test Output Channel',
-            append: sinon.stub(),
-            appendLine: sinon.stub(),
-            clear: sinon.stub(),
-            show: sinon.stub(),
-            hide: sinon.stub(),
-            dispose: sinon.stub()
-        } as unknown as vscode.OutputChannel;
-        
-        // Create mock diagnostic collection
-        diagnosticCollection = {
-            name: 'Test Diagnostic Collection',
-            set: sinon.stub(),
-            delete: sinon.stub(),
-            clear: sinon.stub(),
-            forEach: sinon.stub(),
-            get: sinon.stub(),
-            has: sinon.stub(),
-            dispose: sinon.stub()
-        } as unknown as vscode.DiagnosticCollection;
-        
-        // Create executor with mock dependencies
-        executor = new TinkerExecutor(outputChannel, diagnosticCollection);
+        executor = new TinkerExecutor(
+            outputChannel, 
+            diagnosticCollection,
+            mockLaravelManager,
+            mockFileSystem,
+            mockProcessExecutor
+        );
     });
     
     teardown(() => {
-        // Restore all stubs
-        sandbox.restore();
-        
-        // Restore original fs
-        if (originalFs) {
-            Object.defineProperty(global, 'fs', originalFs);
-        }
-        
-        // Restore original cp
-        if (originalCp) {
-            Object.defineProperty(global, 'cp', originalCp);
-        }
+        mockFactory.restore();
     });
     
     test('executeCode should throw error if no Laravel project found', async () => {
@@ -103,8 +66,8 @@ suite('TinkerExecutor Tests', () => {
             validatePosition: (position: vscode.Position) => position
         } as unknown as vscode.TextDocument;
         
-        // Stub LaravelManager.getLaravelProject to return null
-        sandbox.stub(LaravelManager.prototype, 'getLaravelProject').resolves(null);
+        // Configure Laravel manager to return null
+        (mockLaravelManager.getLaravelProject as sinon.SinonStub).resolves(null);
         
         // Execute code
         const result = await executor.executeCode('<?php echo "test";', document);
@@ -144,35 +107,21 @@ suite('TinkerExecutor Tests', () => {
             { uri: { fsPath: '/workspace' } }
         ]);
         
-        // Stub fsWrapper methods
-        const existsSyncStub = sandbox.stub(fsWrapper, 'existsSync');
+        // Stub fs methods directly
+        const existsSyncStub = fsMock.existsSync;
         existsSyncStub.returns(true);
         
-        // Stub fsWrapper.mkdirSync
-        sandbox.stub(fsWrapper, 'mkdirSync');
+        // Stub fs.mkdirSync
+        fsMock.mkdirSync.returns(undefined);
         
-        // Stub fsWrapper.writeFileSync
-        const writeFileSyncStub = sandbox.stub(fsWrapper, 'writeFileSync');
+        // Stub fs.writeFileSync
+        const writeFileSyncStub = fsMock.writeFileSync;
         
-        // Stub fsWrapper.unlinkSync
-        const unlinkSyncStub = sandbox.stub(fsWrapper, 'unlinkSync');
+        // Stub fs.unlinkSync
+        const unlinkSyncStub = fsMock.unlinkSync;
         
-        // Replace fs with our wrapper
-        Object.defineProperty(global, 'fs', {
-            value: fsWrapper,
-            writable: true,
-            configurable: true
-        });
-        
-        // Replace cp with our wrapper
-        Object.defineProperty(global, 'cp', {
-            value: cpWrapper,
-            writable: true,
-            configurable: true
-        });
-        
-        // Stub cpWrapper.spawn to simulate successful execution
-        const spawnStub = sandbox.stub(cpWrapper, 'spawn').returns({
+        // Stub cp.spawn to simulate successful execution
+        const spawnStub = cpMock.spawn.returns({
             stdout: {
                 on: (event: string, callback: (data: Buffer) => void) => {
                     if (event === 'data') {
@@ -247,34 +196,14 @@ suite('TinkerExecutor Tests', () => {
             { uri: { fsPath: '/workspace' } }
         ]);
         
-        // Stub fsWrapper methods
-        sandbox.stub(fsWrapper, 'existsSync').returns(true);
+        // Stub fs methods directly
+        fsMock.existsSync.returns(true);
+        fsMock.mkdirSync.returns(undefined);
+        fsMock.writeFileSync.returns(undefined);
+        fsMock.unlinkSync.returns(undefined);
         
-        // Stub fsWrapper.mkdirSync
-        sandbox.stub(fsWrapper, 'mkdirSync');
-        
-        // Stub fsWrapper.writeFileSync
-        sandbox.stub(fsWrapper, 'writeFileSync');
-        
-        // Stub fsWrapper.unlinkSync
-        sandbox.stub(fsWrapper, 'unlinkSync');
-        
-        // Replace fs with our wrapper
-        Object.defineProperty(global, 'fs', {
-            value: fsWrapper,
-            writable: true,
-            configurable: true
-        });
-        
-        // Replace cp with our wrapper
-        Object.defineProperty(global, 'cp', {
-            value: cpWrapper,
-            writable: true,
-            configurable: true
-        });
-        
-        // Stub cpWrapper.spawn to simulate execution error
-        const spawnStub = sandbox.stub(cpWrapper, 'spawn').returns({
+        // Stub cp.spawn to simulate execution error
+        const spawnStub = cpMock.spawn.returns({
             stdout: {
                 on: (event: string, callback: (data: Buffer) => void) => {
                     // No stdout output
@@ -333,34 +262,14 @@ suite('TinkerExecutor Tests', () => {
             { uri: { fsPath: '/workspace' } }
         ]);
         
-        // Stub fsWrapper methods
-        sandbox.stub(fsWrapper, 'existsSync').returns(true);
+        // Stub fs methods directly
+        fsMock.existsSync.returns(true);
+        fsMock.mkdirSync.returns(undefined);
+        fsMock.writeFileSync.returns(undefined);
+        fsMock.unlinkSync.returns(undefined);
         
-        // Stub fsWrapper.mkdirSync
-        sandbox.stub(fsWrapper, 'mkdirSync');
-        
-        // Stub fsWrapper.writeFileSync
-        sandbox.stub(fsWrapper, 'writeFileSync');
-        
-        // Stub fsWrapper.unlinkSync
-        sandbox.stub(fsWrapper, 'unlinkSync');
-        
-        // Replace fs with our wrapper
-        Object.defineProperty(global, 'fs', {
-            value: fsWrapper,
-            writable: true,
-            configurable: true
-        });
-        
-        // Replace cp with our wrapper
-        Object.defineProperty(global, 'cp', {
-            value: cpWrapper,
-            writable: true,
-            configurable: true
-        });
-        
-        // Stub cpWrapper.spawn to simulate spawn error
-        const spawnStub = sandbox.stub(cpWrapper, 'spawn').returns({
+        // Stub cp.spawn to simulate spawn error
+        const spawnStub = cpMock.spawn.returns({
             stdout: {
                 on: (event: string, callback: (data: Buffer) => void) => {
                     // No stdout output
@@ -393,21 +302,11 @@ suite('TinkerExecutor Tests', () => {
             { uri: { fsPath: '/workspace' } }
         ]);
         
-        // Stub fsWrapper methods
-        sandbox.stub(fsWrapper, 'existsSync').returns(true);
+        // Stub fs.mkdirSync directly to avoid the error
+        fsMock.mkdirSync.returns(undefined);
         
-        // Stub fsWrapper.mkdirSync
-        sandbox.stub(fsWrapper, 'mkdirSync');
-        
-        // Stub fsWrapper.writeFileSync
-        const writeFileSyncStub = sandbox.stub(fsWrapper, 'writeFileSync');
-        
-        // Replace fs with our wrapper
-        Object.defineProperty(global, 'fs', {
-            value: fsWrapper,
-            writable: true,
-            configurable: true
-        });
+        // Stub fs.writeFileSync
+        const writeFileSyncStub = fsMock.writeFileSync;
         
         // Call createTempCodeFile with PHP tags
         await (executor as any).createTempCodeFile('<?php echo "test"; ?>');
@@ -418,8 +317,8 @@ suite('TinkerExecutor Tests', () => {
     });
     
     test('executeTinker should throw error if artisan file does not exist', async () => {
-        // Stub fsWrapper.existsSync to return false for artisan file
-        const existsSyncStub = sandbox.stub(fsWrapper, 'existsSync');
+        // Stub fs.existsSync to return false for artisan file
+        const existsSyncStub = fsMock.existsSync;
         existsSyncStub.withArgs(sinon.match(/artisan$/)).returns(false);
         
         // Call executeTinker

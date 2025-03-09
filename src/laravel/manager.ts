@@ -1,38 +1,37 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import * as child_process from 'child_process';
 import { LaravelDetector } from './detector';
-import { FileUtils } from '../utils/fileUtils';
+import { FileSystemService, NodeFileSystemService } from '../utils/fileSystemService';
+import { ILaravelManager } from '../interfaces/laravelManager.interface';
+import { IProcessExecutor } from '../interfaces/processExecutor.interface';
+import { NodeProcessExecutor } from '../services/nodeProcessExecutor.service';
 
 /**
  * Class to manage Laravel projects for Tinker execution
  */
-export class LaravelManager {
+export class LaravelManager implements ILaravelManager {
     private tempProjectDir: string;
     private outputChannel: vscode.OutputChannel;
+    private processExecutor: IProcessExecutor;
 
-    /**
-     * Constructor
-     * @param outputChannel Output channel for displaying messages
-     */
-    constructor(outputChannel: vscode.OutputChannel) {
-        this.outputChannel = outputChannel;
+    constructor(
+        private workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined,
+        private fs: FileSystemService = new NodeFileSystemService() as FileSystemService,
+        outputChannel?: vscode.OutputChannel,
+        processExecutor?: IProcessExecutor
+    ) {
+        this.tempProjectDir = path.join(this.getWorkspaceRoot(), '.tinker-notebook');
+        this.outputChannel = outputChannel || vscode.window.createOutputChannel('Laravel Manager');
+        this.processExecutor = processExecutor || new NodeProcessExecutor();
         
-        // Create temp directory for Laravel projects
-        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-            const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
-            this.tempProjectDir = path.join(workspaceRoot, '.tinker-notebook');
-        } else {
-            // Fallback to OS temp directory if no workspace is open
-            this.tempProjectDir = path.join(os.tmpdir(), 'tinker-notebook');
+        if (!this.fs.existsSync(this.tempProjectDir)) {
+            this.fs.mkdirSync(this.tempProjectDir, { recursive: true });
         }
-        
-        // Ensure temp directory exists
-        if (!fs.existsSync(this.tempProjectDir)) {
-            fs.mkdirSync(this.tempProjectDir, { recursive: true });
-        }
+    }
+
+    private getWorkspaceRoot(): string {
+        return this.workspaceFolders?.[0]?.uri.fsPath || os.tmpdir();
     }
 
     /**
@@ -49,7 +48,7 @@ export class LaravelManager {
 
         // If no existing project, check if we have a temporary project
         const tempProjectPath = path.join(this.tempProjectDir, 'laravel');
-        if (fs.existsSync(path.join(tempProjectPath, 'artisan'))) {
+        if (this.fs.existsSync(path.join(tempProjectPath, 'artisan'))) {
             return tempProjectPath;
         }
 
@@ -71,8 +70,8 @@ export class LaravelManager {
         }
 
         // Create directory if it doesn't exist
-        if (!fs.existsSync(tempProjectPath)) {
-            fs.mkdirSync(tempProjectPath, { recursive: true });
+        if (!this.fs.existsSync(tempProjectPath)) {
+            this.fs.mkdirSync(tempProjectPath, { recursive: true });
         }
 
         try {
@@ -80,7 +79,7 @@ export class LaravelManager {
             this.outputChannel.show();
 
             // Create Laravel project using composer
-            const result = await this.executeCommand(
+            const result = await this.processExecutor.executeCommand(
                 'composer create-project --prefer-dist laravel/laravel .',
                 tempProjectPath
             );
@@ -109,32 +108,10 @@ export class LaravelManager {
                 ? `where ${command}`
                 : `which ${command}`;
             
-            const result = await this.executeCommand(checkCommand);
+            const result = await this.processExecutor.executeCommand(checkCommand);
             return result.exitCode === 0;
         } catch (error) {
             return false;
         }
-    }
-
-    /**
-     * Execute a command and return the result
-     * @param command Command to execute
-     * @param cwd Working directory
-     * @returns Result of the command execution
-     */
-    private executeCommand(command: string, cwd?: string): Promise<{ output: string, error?: string, exitCode: number }> {
-        return new Promise((resolve) => {
-            const process = child_process.exec(
-                command,
-                { cwd },
-                (error, stdout, stderr) => {
-                    resolve({
-                        output: stdout,
-                        error: stderr,
-                        exitCode: error ? error.code || 1 : 0
-                    });
-                }
-            );
-        });
     }
 }

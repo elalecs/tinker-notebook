@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { ExecutionResult } from './executor';
-import { LaravelManager } from '../laravel/manager';
+import { ILaravelManager } from '../interfaces/laravelManager.interface';
+import { IFileSystem } from '../interfaces/fileSystem.interface';
+import { IProcessExecutor } from '../interfaces/processExecutor.interface';
+import { ServiceFactory } from '../services/serviceFactory';
 
 /**
  * Handles execution of PHP code using Laravel Tinker
@@ -12,12 +13,26 @@ import { LaravelManager } from '../laravel/manager';
 export class TinkerExecutor {
     private outputChannel: vscode.OutputChannel;
     private diagnosticCollection: vscode.DiagnosticCollection;
-    private laravelManager: LaravelManager;
+    private laravelManager: ILaravelManager;
+    private fileSystem: IFileSystem;
+    private processExecutor: IProcessExecutor;
     
-    constructor(outputChannel: vscode.OutputChannel, diagnosticCollection: vscode.DiagnosticCollection) {
+    constructor(
+        outputChannel: vscode.OutputChannel, 
+        diagnosticCollection: vscode.DiagnosticCollection,
+        laravelManager?: ILaravelManager,
+        fileSystem?: IFileSystem,
+        processExecutor?: IProcessExecutor
+    ) {
         this.outputChannel = outputChannel;
         this.diagnosticCollection = diagnosticCollection;
-        this.laravelManager = new LaravelManager(outputChannel);
+        this.fileSystem = fileSystem || ServiceFactory.createFileSystem();
+        this.processExecutor = processExecutor || ServiceFactory.createProcessExecutor();
+        this.laravelManager = laravelManager || ServiceFactory.createLaravelManager(
+            vscode.workspace.workspaceFolders, 
+            this.fileSystem, 
+            outputChannel
+        );
     }
     
     /**
@@ -29,40 +44,40 @@ export class TinkerExecutor {
     public async executeCode(code: string, document: vscode.TextDocument): Promise<ExecutionResult> {
         // Record start time for performance tracking
         const startTime = Date.now();
-        this.outputChannel.appendLine('🔄 Preparing to execute Tinker code...');
+        this.outputChannel.appendLine(' Preparing to execute Tinker code...');
         
         try {
             // Get Laravel project for the file
-            this.outputChannel.appendLine('🔍 Detecting Laravel project...');
+            this.outputChannel.appendLine(' Detecting Laravel project...');
             const laravelProject = await this.laravelManager.getLaravelProject(document.uri.fsPath);
             
             if (!laravelProject) {
-                this.outputChannel.appendLine('❌ No Laravel project found!');
+                this.outputChannel.appendLine(' No Laravel project found!');
                 throw new Error('No Laravel project found. Cannot execute Tinker code. Please ensure you are in a Laravel project or that Laravel is installed.');
             }
             
-            this.outputChannel.appendLine(`✅ Laravel project found at: ${laravelProject}`);
+            this.outputChannel.appendLine(` Laravel project found at: ${laravelProject}`);
             
             // Create a temporary file for the code
-            this.outputChannel.appendLine('📝 Creating temporary file for Tinker execution...');
+            this.outputChannel.appendLine(' Creating temporary file for Tinker execution...');
             const tempFile = await this.createTempCodeFile(code);
             
             // Execute the code with Tinker
-            this.outputChannel.appendLine('▶️ Executing code with Tinker...');
+            this.outputChannel.appendLine(' Executing code with Tinker...');
             const result = await this.executeTinker(tempFile, laravelProject);
             
             // Clean up the temporary file
-            this.outputChannel.appendLine('🧹 Cleaning up temporary files...');
-            fs.unlinkSync(tempFile);
+            this.outputChannel.appendLine(' Cleaning up temporary files...');
+            this.fileSystem.unlinkSync(tempFile);
             
             // Calculate execution time
             const executionTime = Date.now() - startTime;
-            this.outputChannel.appendLine(`⏱️ Execution completed in ${executionTime}ms`);
+            this.outputChannel.appendLine(` Execution completed in ${executionTime}ms`);
             
             if (result.error) {
-                this.outputChannel.appendLine('❌ Execution completed with errors');
+                this.outputChannel.appendLine(' Execution completed with errors');
             } else {
-                this.outputChannel.appendLine('✅ Execution completed successfully');
+                this.outputChannel.appendLine(' Execution completed successfully');
             }
             
             return {
@@ -97,8 +112,8 @@ export class TinkerExecutor {
         
         // Create temp directory if it doesn't exist
         const tempDir = path.join(baseDir, '.tinker-notebook', 'temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
+        if (!this.fileSystem.existsSync(tempDir)) {
+            this.fileSystem.mkdirSync(tempDir, { recursive: true });
         }
         
         const tempFile = path.join(tempDir, `tinker-${Date.now()}.php`);
@@ -108,7 +123,7 @@ export class TinkerExecutor {
         code = code.replace(/^<\?php/, '').replace(/<\?/, '').replace(/\?>/, '');
         
         // Write code to temporary file
-        fs.writeFileSync(tempFile, code);
+        this.fileSystem.writeFileSync(tempFile, code);
         
         return tempFile;
     }
@@ -119,71 +134,28 @@ export class TinkerExecutor {
      * @param laravelProjectPath The path to the Laravel project
      * @returns The execution result
      */
-    private executeTinker(filePath: string, laravelProjectPath: string): Promise<{ output: string, error?: string, exitCode: number }> {
-        return new Promise((resolve) => {
-            try {
-                // Check if artisan file exists in the Laravel project
-                const artisanPath = path.join(laravelProjectPath, 'artisan');
-                if (!fs.existsSync(artisanPath)) {
-                    throw new Error(`Artisan file not found at ${artisanPath}. Cannot execute Tinker.`);
-                }
-                
-                // Execute Tinker with the file
-                this.outputChannel.appendLine(`📋 Executing: php artisan tinker ${filePath}`);
-                const process = cp.spawn('php', ['artisan', 'tinker', filePath], {
-                    cwd: laravelProjectPath
-                });
-                
-                let stdout = '';
-                let stderr = '';
-                
-                // Collect stdout
-                process.stdout.on('data', (data) => {
-                    const output = data.toString();
-                    stdout += output;
-                    this.outputChannel.append(output);
-                });
-                
-                // Collect stderr
-                process.stderr.on('data', (data) => {
-                    const output = data.toString();
-                    stderr += output;
-                    this.outputChannel.append(`ERROR: ${output}`);
-                });
-                
-                // Handle process completion
-                process.on('close', (code) => {
-                    if (code === 0) {
-                        this.outputChannel.appendLine('✅ Tinker process completed successfully');
-                    } else {
-                        this.outputChannel.appendLine(`❌ Tinker process exited with code ${code}`);
-                    }
-                    
-                    resolve({
-                        output: stdout,
-                        error: stderr || undefined,
-                        exitCode: code || 0
-                    });
-                });
-                
-                // Handle process error
-                process.on('error', (err) => {
-                    this.outputChannel.appendLine(`❌ Failed to start Tinker process: ${err.message}`);
-                    resolve({
-                        output: '',
-                        error: `Failed to start Tinker process: ${err.message}`,
-                        exitCode: 1
-                    });
-                });
-            } catch (error) {
-                this.outputChannel.appendLine(`❌ Error executing Tinker: ${error instanceof Error ? error.message : String(error)}`);
-                resolve({
-                    output: '',
-                    error: error instanceof Error ? error.message : String(error),
-                    exitCode: 1
-                });
+    private async executeTinker(filePath: string, laravelProjectPath: string): Promise<ExecutionResult> {
+        try {
+            // Check if artisan file exists in the Laravel project
+            const artisanPath = path.join(laravelProjectPath, 'artisan');
+            if (!this.fileSystem.existsSync(artisanPath)) {
+                throw new Error(`Artisan file not found at ${artisanPath}. Cannot execute Tinker.`);
             }
-        });
+            
+            // Execute Tinker with the file
+            this.outputChannel.appendLine(` Executing: php artisan tinker ${filePath}`);
+            return await this.processExecutor.execute('php', ['artisan', 'tinker', filePath], {
+                cwd: laravelProjectPath
+            });
+        } catch (error) {
+            this.outputChannel.appendLine(` Error executing Tinker: ${error instanceof Error ? error.message : String(error)}`);
+            return {
+                output: '',
+                error: error instanceof Error ? error.message : String(error),
+                exitCode: 1,
+                executionTime: 0
+            };
+        }
     }
     
     /**
