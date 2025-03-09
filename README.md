@@ -1,85 +1,131 @@
 # Tinker Notebook
 
-A lightweight VS Code extension that enables interactive PHP code execution directly in Markdown files. Tinker Notebook allows you to write, document, and execute PHP code within Markdown code blocks, providing immediate feedback without leaving your editor.
+A lightweight VS Code extension that enables interactive PHP and Laravel Tinker code execution directly in Markdown files. Tinker Notebook allows you to write, document, and execute PHP code within Markdown code blocks, providing immediate feedback without leaving your editor.
 
-## Features
+## Estado Actual
 
-- **Interactive PHP Code Execution**: Run PHP code directly in your Markdown files with Ctrl+Enter (Cmd+Enter on Mac)
-- **Code Block Detection**: Automatically detects ```php and ```tinker code blocks in Markdown files
-- **Visual Feedback**: Displays execution status with decorators next to code blocks
-- **Output Display**: Shows execution results in the Output panel
-- **Error Handling**: Displays errors in the Problems panel with references to the source code
+- ✅ **Fase 1**: Ejecución básica de código PHP desde archivos Markdown
+- ✅ **Fase 2**: Ejecución diferenciada PHP/Tinker con detección de proyectos Laravel
+- ✅ **Fase 3**: Gestión del estado de bloques de código con almacenamiento persistente
+- ✅ **Fase 5**: Formateo mejorado de salida para diferentes tipos de datos
 
-## Requirements
+## Características Implementadas
 
-- VS Code or VSCodium (version 1.60.0 or higher)
-- PHP 7.4+ installed and available in your PATH
+- **Ejecución de Código**
+  - Ejecución de bloques de código PHP (```php) usando el binario PHP del sistema
+  - Ejecución de bloques Tinker (```tinker) usando php artisan tinker
+  - Detección automática de proyectos Laravel en el workspace
+  - Creación de proyectos Laravel temporales cuando sea necesario
 
-## Installation
+- **Gestión de Estado**
+  - Sistema de identificación de bloques con IDs personalizados (```php:id, ```tinker:id)
+  - Seguimiento del estado de ejecución con indicadores visuales:
+    - ▶️ No ejecutado
+    - ⏹️ Ejecutando/parar ejecución
+    - 🟢 Ejecutado correctamente
+    - ❌ Error en ejecución
+  - Persistencia del estado entre sesiones del editor
 
-### From VS Code Marketplace (Coming Soon)
+- **Referencia de Resultados**
+  - Sistema de referencia entre bloques mediante sintaxis $tinker_outputs.id
+  - Detección y prevención de referencias circulares
+  - Información detallada al pasar el cursor sobre los bloques
 
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X or Cmd+Shift+X)
-3. Search for "Tinker Notebook"
-4. Click Install
-5. Reload VS Code when prompted
+- **Formateo de Salida**
+  - Detección inteligente de tipos de salida (JSON, arrays, objetos, etc.)
+  - Formateadores para diferentes tipos de datos con resaltado de sintaxis
+  - Secciones colapsables para mejorar la legibilidad
+  - Funcionalidad de exportación en varios formatos (JSON, CSV, Texto)
 
-### Manual Installation
+## Requisitos
 
-1. Download the `.vsix` file from the [GitHub releases page](https://github.com/your-username/tinker-notebook/releases)
-2. In VS Code, go to Extensions (Ctrl+Shift+X)
-3. Click the "..." menu in the top-right of the Extensions panel
-4. Select "Install from VSIX..."
-5. Navigate to and select the downloaded `.vsix` file
-6. Reload VS Code when prompted
+- PHP 7.4+ (requerido)
+- Composer & Laravel (opcional para bloques Tinker)
 
-## Usage
+## Instalación
 
-1. Create or open a Markdown file (`.md`)
-2. Add a PHP code block using triple backticks and the `php` or `tinker` language identifier:
+### Desde VS Code Marketplace (Próximamente)
+
+1. Abre VS Code
+2. Ve a Extensiones (Ctrl+Shift+X o Cmd+Shift+X)
+3. Busca "Tinker Notebook"
+4. Haz clic en Instalar
+5. Recarga VS Code cuando se te solicite
+
+### Instalación Manual
+
+1. Descarga el archivo `.vsix` desde la [página de releases de GitHub](https://github.com/your-username/tinker-notebook/releases)
+2. En VS Code, ve a Extensiones (Ctrl+Shift+X)
+3. Haz clic en el menú "..." en la parte superior derecha del panel de Extensiones
+4. Selecciona "Install from VSIX..."
+5. Navega y selecciona el archivo `.vsix` descargado
+6. Recarga VS Code cuando se te solicite
+
+## Uso
+
+1. Crea o abre un archivo Markdown (`.md`)
+2. Añade un bloque de código PHP usando triple backticks y el identificador de lenguaje `php` o `tinker`:
 
 ```markdown
-# My PHP Notes
+# Mis Notas de PHP
 
-Here's a simple PHP example:
+Aquí hay un ejemplo simple de PHP:
 
 ```php
 $greeting = "Hello, World!";
 echo $greeting;
 
-// You can also use variables
+// También puedes usar variables
 $name = "Tinker Notebook";
 echo "Welcome to {$name}!";
 ```
 
-3. Place your cursor inside the code block
-4. Press Ctrl+Enter (Cmd+Enter on Mac) to execute the code
-5. View the results in the Output panel
+```tinker:mi_consulta
+// Este bloque se ejecutará con Laravel Tinker
+$users = \App\Models\User::all();
+return $users;
+```
 
-## Extension Settings
+// Puedes referenciar resultados anteriores
+```php
+$data = $tinker_outputs.mi_consulta;
+var_dump(count($data));
+```
+```
 
-This extension contributes the following settings:
+3. Coloca el cursor dentro del bloque de código
+4. Presiona Ctrl+Enter (Cmd+Enter en Mac) para ejecutar el código
+5. Visualiza los resultados en el panel Output
 
-* `tinker-notebook.phpPath`: Path to PHP executable (default: "php")
-* `tinker-notebook.timeout`: Timeout for PHP execution in milliseconds (default: 30000)
+## Configuración de la Extensión
 
-## Keyboard Shortcuts
+Esta extensión contribuye con las siguientes configuraciones:
 
-* `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac): Execute the code block at the current cursor position
+* `tinker-notebook.phpPath`: Ruta al ejecutable de PHP (predeterminado: "php")
+* `tinker-notebook.timeout`: Tiempo de espera para la ejecución de PHP en milisegundos (predeterminado: 30000)
+* `tinker-notebook.laravelPath`: Ruta al proyecto Laravel para ejecución de Tinker (opcional)
 
-## Roadmap
+## Atajos de Teclado
 
-See the [TODO.md](TODO.md) file for planned features and enhancements.
+* `Ctrl+Enter` (Windows/Linux) o `Cmd+Enter` (Mac): Ejecutar el bloque de código en la posición actual del cursor
 
-## Contributing
+## Próximas Características
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Estamos trabajando actualmente en:
 
-## License
+- **Fase 6**: Biblioteca de snippets
+- **Fase 7**: Características avanzadas como directivas especiales y formateadores personalizados
 
-This extension is licensed under the MIT License.
+Consulta el archivo [TODO.md](TODO.md) para ver todas las características planificadas y mejoras.
 
----
+## Contribuir
 
-**Enjoy using Tinker Notebook!**
+¡Las contribuciones son bienvenidas! Por favor, consulta [CONTRIBUTING.md](CONTRIBUTING.md) para obtener información detallada sobre cómo configurar el entorno de desarrollo y contribuir al proyecto.
+
+## Licencia
+
+Esta extensión está licenciada bajo la Licencia MIT.
+
+## Documentación
+- [Guía de Contribución](CONTRIBUTING.md)
+- [Plan de Desarrollo](TODO.md)
