@@ -1,0 +1,78 @@
+{
+  "name": "tinker-notebook",
+  "displayName": "Tinker Notebook",
+  "description": "A simple like Jupyter Notebook like for PHP/Tinker",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tinker-notebook.executeCodeBlock",
+        "title": "Tinker Notebook: Execute Code Block"
+      },
+      {
+        "command": "tinker-notebook.executeFromDecorator",
+        "title": "Tinker Notebook: Execute Code From Decorator"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "tinker-notebook.executeCodeBlock",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "editorLangId == markdown && editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Tinker Notebook",
+      "properties": {
+        "tinker-notebook.phpPath": {
+          "type": "string",
+          "default": "php",
+          "description": "Path to PHP executable"
+        },
+        "tinker-notebook.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Timeout for PHP execution in milliseconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.98.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/sinon": "^17.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "eslint": "^9.21.0",
+    "typescript": "^5.7.3",
+    "ts-loader": "^9.5.2",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "sinon": "^17.0.1"
+  }
+}
