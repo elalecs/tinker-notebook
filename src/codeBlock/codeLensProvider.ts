@@ -45,7 +45,15 @@ export class CodeBlockCodeLensProvider implements vscode.CodeLensProvider {
                 arguments: [block.id]
             });
             
+            // Create the Run and Copy CodeLens with the block ID as an argument
+            const runAndCopyCodeLens = new vscode.CodeLens(codeLensRange, {
+                title: '📋 Run and Copy',
+                command: 'tinker-notebook.executeAndCopyFromCodeLens',
+                arguments: [block.id]
+            });
+            
             codeLenses.push(runCodeLens);
+            codeLenses.push(runAndCopyCodeLens);
         }
         
         return codeLenses;

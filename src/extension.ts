@@ -149,6 +149,49 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     
+    // Register command to execute code block and copy result to clipboard
+    const executeAndCopyFromCodeLensCommand = vscode.commands.registerCommand(
+        'tinker-notebook.executeAndCopyFromCodeLens',
+        async (blockId: string) => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                return;
+            }
+            
+            const document = editor.document;
+            const codeBlocks = codeBlockDetector.findCodeBlocks(document);
+            const codeBlock = codeBlocks.find(block => block.id === blockId);
+            
+            if (codeBlock) {
+                // Execute the code block
+                await executeCodeBlock(codeBlock, document, editor);
+                
+                // Get the result from the state manager
+                const stateEntry = blockStateManager.getBlockState(codeBlock.id);
+                if (stateEntry?.lastResult && !stateEntry.lastResult.error) {
+                    // Get just the output value
+                    let outputValue = stateEntry.lastResult.output;
+                    
+                    // If it's an object or array, format it as JSON
+                    if (typeof outputValue === 'object') {
+                        outputValue = JSON.stringify(outputValue, null, 2);
+                    }
+                    
+                    // Copy to clipboard
+                    vscode.env.clipboard.writeText(String(outputValue));
+                    
+                    // Show notification
+                    vscode.window.showInformationMessage('Result copied to clipboard');
+                } else if (stateEntry?.lastResult?.error) {
+                    vscode.window.showErrorMessage('Cannot copy result: Execution had errors');
+                }
+                
+                // Refresh CodeLens to update the status
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri);
+            }
+        }
+    );
+    
     // Function to execute a code block
     async function executeCodeBlock(codeBlock: CodeBlock, document: vscode.TextDocument, editor: vscode.TextEditor) {
         try {
@@ -300,6 +343,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Add commands to subscriptions
     context.subscriptions.push(executeCodeBlockCommand);
     context.subscriptions.push(executeFromCodeLensCommand);
+    context.subscriptions.push(executeAndCopyFromCodeLensCommand);
     context.subscriptions.push(showOutputChannelCommand);
     context.subscriptions.push(clearBlockStatesCommand);
     context.subscriptions.push(exportAsJsonCommand);
