@@ -13,6 +13,8 @@ Tinker Notebook is a VS Code extension that allows you to execute PHP and Larave
 - Result referencing system between code blocks
 - Visual status indicators for execution state
 - Smart output formatting for different data types
+- Dedicated Tinker Output panel with WebView interface (coming soon)
+- Interactive export options for execution results (coming soon)
 
 For more detailed information about the project architecture, check the implementation details in [TODO.md](TODO.md).
 
@@ -57,6 +59,10 @@ tinker-notebook/
 │   ├── output/             # Output formatting
 │   │   ├── formatter.ts    # Base formatter interface
 │   │   └── formatters/     # Type-specific formatters
+│   ├── webview/            # WebView panel components (planned)
+│   │   ├── tinkerOutputPanel.ts  # WebView panel for execution results
+│   │   ├── messageHandler.ts     # Handles messages between extension and WebView
+│   │   └── resources/            # HTML, CSS, and JS resources for WebView
 │   └── utils/              # Utility functions
 │       ├── fileUtils.ts    # File handling utilities
 │       └── referenceParser.ts # Parses block references
@@ -120,17 +126,6 @@ npm run test
 
 ## Current Development Status
 
-As of now, the project has completed the following phases:
-- ✅ **Phase 1**: Basic PHP code execution from Markdown files
-- ✅ **Phase 2**: Differentiated PHP/Tinker execution with Laravel detection
-- ✅ **Phase 3**: Code block state management with persistent storage
-- ✅ **Phase 5**: Enhanced output formatting for different data types
-
-Current development focus is on:
-- 🔄 **Phase 6**: Snippet library implementation
-- 🔄 **Phase 7**: Advanced features like special directives and custom formatters
-- 🔄 Technical debt reduction and performance optimization
-
 See [TODO.md](TODO.md) for a detailed breakdown of completed and planned features.
 
 ## Contribution Guidelines
@@ -190,22 +185,6 @@ To install the extension manually from a VSIX file:
 6. Reload VS Code when prompted
 
 This method is useful for testing the extension before publishing it to the VS Code Marketplace, or for distributing it to users who don't have access to the Marketplace.
-
-### Publishing to VS Code Marketplace
-
-When the extension is ready for public release:
-
-1. Ensure you have a Microsoft account and have created a publisher on the VS Code Marketplace
-2. Login with vsce:
-   ```bash
-   vsce login <publisher-name>
-   ```
-3. Publish the extension:
-   ```bash
-   vsce publish
-   ```
-
-Note: Before publishing, make sure to update the version number in `package.json` following semantic versioning principles.
 
 ## Tips for Developers
 

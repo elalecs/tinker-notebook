@@ -7,10 +7,10 @@ This document outlines the development plan for Tinker Notebook, a compact versi
 - **Phase 1 (Proof of Concept)**: ✅ COMPLETED
 - **Phase 2 (Differentiated PHP/Tinker Execution)**: ✅ COMPLETED
 - **Phase 3 (Code Block State Management)**: ✅ COMPLETED
-- **Phase 4 (Session Management)**: ⏭️ SKIPPED
-- **Phase 5 (Enhanced Output Formatting)**: ✅ COMPLETED
-- **Phase 6 (Snippet Library)**: 🔄 PLANNED
-- **Phase 7 (Advanced Features)**: 🔄 PLANNED
+- **Phase 4 (Enhanced Output Formatting)**: ✅ COMPLETED
+- **Phase 5 (Tinker Output Panel)**: 🔄 PLANNED
+- **Phase 6 (Session Management)**: 🔄 PLANNED
+- **Phase 7 (Snippet Library)**: 🔄 PLANNED
 
 Current version includes:
 - PHP/Tinker code execution from Markdown files
@@ -120,16 +120,6 @@ Current version includes:
    - [x] Test creation and use of temporary Laravel projects
    - [x] Test error handling when Laravel/Composer is not available
 
-### Progress Summary
-- ✅ Implemented Laravel project detection with the `LaravelDetector` class
-- ✅ Implemented temporary Laravel project management with the `LaravelManager` class
-- ✅ Implemented Tinker code execution with the `TinkerExecutor` class
-- ✅ Integrated differentiated execution in the main `extension.ts` file
-- ✅ Enhanced error handling with descriptive messages
-- ✅ Added visual feedback with emojis in the output channel
-- ✅ Completed unit tests for all Phase 2 components
-- ✅ Completed integration tests for Phase 2 functionality
-
 3. **End-to-End Testing**
    - [x] Launch VS Code in a Laravel project and validate tinker execution
    - [x] Launch VS Code in a non-Laravel project and validate temporary creation
@@ -173,14 +163,6 @@ Current version includes:
    - [x] Replace references in subsequent blocks before execution
    - [x] Handle circular references and dependency tracking
 
-### Progress Summary
-- ✅ Implemented block identification system with custom IDs using the ```php:id or ```tinker:id syntax
-- ✅ Created BlockStateManager for tracking and persisting block execution states
-- ✅ Added visual status indicators with appropriate emojis
-- ✅ Implemented result referencing with $tinker_outputs.id syntax
-- ✅ Added circular reference detection and prevention
-- ✅ Enhanced block hover information to show execution details
-
 ### Testing for Phase 3
 1. **Unit Testing**
    - [x] Unit tests for block ID generation and parsing
@@ -200,40 +182,7 @@ Current version includes:
    - [x] Validate result referencing between blocks
    - [x] Test state persistence after IDE restart
 
-### Final Status Report for Phase 3
-- The Phase 3 implementation is now complete and tested
-- All core features are working as expected with proper UI feedback
-- State management persists between editor sessions
-- Result referencing works with the $tinker_outputs.id syntax
-- Visual indicators clearly show the status of each code block
-- The extension passes all test cases
-- Ready to proceed to Phase 4 (Session Management)
-
-## Phase 4: Session Management
-
-- [ ] Maintain state between code executions
-- [ ] Implement session identifiers for code blocks
-- [ ] Create session variable tracking
-- [ ] Add session management commands
-- [ ] Visualize active/inactive sessions
-
-### Testing for Phase 4
-1. **Unit Testing**
-   - [ ] Unit tests for session management classes
-   - [ ] Unit tests for variable tracking
-   - [ ] Unit tests for session persistence
-
-2. **Integration Testing**
-   - [ ] Test session creation and switching
-   - [ ] Test variable persistence between executions
-   - [ ] Test session isolation between different files
-
-3. **End-to-End Testing**
-   - [ ] Launch VS Code and test session management UI
-   - [ ] Validate session state persistence
-   - [ ] Test variable access across multiple code blocks
-
-## Phase 5: Enhanced Output Formatting
+## Phase 4: Enhanced Output Formatting
 
 - [x] Implement smart output detection (JSON, arrays, etc.)
 - [x] Add formatting options for different output types
@@ -266,15 +215,7 @@ Current version includes:
    - [x] Add export options to output channel display
    - [x] Make output formatting configurable
 
-### Progress Summary
-- ✅ Implemented smart output detection with OutputDetector
-- ✅ Created formatters for different output types (JSON, arrays, objects, strings)
-- ✅ Added syntax highlighting for code and structured data
-- ✅ Implemented collapsible sections for better readability
-- ✅ Added export functionality with multiple format options (JSON, CSV, Text)
-- ✅ Integrated all components with the extension's execution flow
-
-### Testing for Phase 5
+### Testing for Phase 4
 1. **Unit Testing**
    - [x] Unit tests for output formatters
    - [x] Unit tests for output type detection
@@ -290,22 +231,89 @@ Current version includes:
    - [x] Test user interaction with collapsible sections
    - [x] Validate export functionality in real environment
 
-### Final Status Report for Phase 5
-- The Phase 5 implementation is now complete
-- All core features have been implemented and integrated
-- Smart output detection correctly identifies different types of data
-- Formatters provide well-structured and readable output
-- Export functionality works with multiple format options
-- Ready to proceed to Phase 6 (Snippet Library)
+## Phase 5: Tinker Output Panel
 
-## Phase 6: Snippet Library
+- [ ] Create dedicated WebView panel for execution results
+- [ ] Implement syntax highlighting for different output types
+- [ ] Add interactive export buttons (JSON, CSV, TXT, Copy to Clipboard)
+- [ ] Implement collapsible sections for complex data structures
+- [ ] Create real-time output updates during execution
+
+### Implementation Tasks
+1. **WebView Panel Creation**
+   - [ ] Create TinkerOutputPanel class extending WebviewPanel
+   - [ ] Design HTML/CSS template for the panel
+   - [ ] Implement message passing between extension and WebView
+   - [ ] Add panel persistence across editor sessions
+
+2. **Output Rendering**
+   - [ ] Implement syntax highlighting for JSON, arrays, and objects
+   - [ ] Create collapsible tree view for nested data structures
+   - [ ] Add support for pagination of large result sets
+   - [ ] Implement search functionality within results
+
+3. **Export Functionality**
+   - [ ] Add export buttons for different formats (JSON, CSV, TXT)
+   - [ ] Implement clipboard copy functionality
+   - [ ] Create download handlers for exported files
+   - [ ] Add export progress indicators
+
+4. **Integration**
+   - [ ] Connect execution service with WebView panel
+   - [ ] Implement result history navigation
+   - [ ] Add configuration options for panel behavior
+   - [ ] Create commands for panel management
+
+### Testing for Phase 5
+1. **Unit Testing**
+   - [ ] Unit tests for WebView message handling
+   - [ ] Unit tests for output rendering
+   - [ ] Unit tests for export functionality
+
+2. **Integration Testing**
+   - [ ] Test panel creation and persistence
+   - [ ] Test output rendering with various data types
+   - [ ] Test export functionality with different formats
+   - [ ] Test interaction between execution service and panel
+
+3. **End-to-End Testing**
+   - [ ] Launch VS Code and validate panel creation
+   - [ ] Test user interaction with collapsible sections
+   - [ ] Validate export functionality in real environment
+   - [ ] Test panel behavior with large outputs
+
+## Phase 6: Session Management
+
+- [ ] Maintain state between code executions
+- [ ] Implement session identifiers for code blocks
+- [ ] Create session variable tracking
+- [ ] Add session management commands
+- [ ] Visualize active/inactive sessions
+
+### Testing for Phase 6
+1. **Unit Testing**
+   - [ ] Unit tests for session management classes
+   - [ ] Unit tests for variable tracking
+   - [ ] Unit tests for session persistence
+
+2. **Integration Testing**
+   - [ ] Test session creation and switching
+   - [ ] Test variable persistence between executions
+   - [ ] Test session isolation between different files
+
+3. **End-to-End Testing**
+   - [ ] Launch VS Code and test session management UI
+   - [ ] Validate session state persistence
+   - [ ] Test variable access across multiple code blocks
+
+## Phase 7: Snippet Library
 
 - [ ] Create snippet storage system
 - [ ] Implement snippet import/export
 - [ ] Add snippet management UI
 - [ ] Create commands for snippet operations
 
-### Testing for Phase 6
+### Testing for Phase 7
 1. **Unit Testing**
    - [ ] Unit tests for snippet storage system
    - [ ] Unit tests for snippet import/export
@@ -321,31 +329,6 @@ Current version includes:
    - [ ] Validate snippet persistence
    - [ ] Test snippet usage in real coding scenarios
 
-## Phase 7: Advanced Features
-
-- [ ] Optimize process management
-- [ ] Implement special directives processing
-- [ ] Add support for custom PHP binary configuration
-- [ ] Create advanced error handling and suggestions
-- [ ] Add support for custom output formatters
-
-### Testing for Phase 7
-1. **Unit Testing**
-   - [ ] Unit tests for process management
-   - [ ] Unit tests for directive processing
-   - [ ] Unit tests for custom formatters
-   - [ ] Unit tests for error handling
-
-2. **Integration Testing**
-   - [ ] Test process management with long-running scripts
-   - [ ] Test directive processing in various contexts
-   - [ ] Test custom formatters with different output types
-
-3. **End-to-End Testing**
-   - [ ] Launch VS Code and validate advanced features
-   - [ ] Test performance with large files and complex code
-   - [ ] Validate error suggestions in real coding scenarios
-
 ## Technical Debt & Refactoring
 
 - [x] Set up comprehensive test suite
@@ -357,19 +340,3 @@ Current version includes:
 - [x] Improve code organization and modularity
 - [x] Implement proper state management
 - [x] Ensure type safety throughout the codebase
-
-## Continuous Integration & Deployment
-
-- [ ] Set up GitHub Actions workflow for CI
-- [ ] Configure automated testing on pull requests
-- [ ] Set up automated VSIX package generation
-- [ ] Configure automated deployment to VS Code Marketplace
-- [ ] Implement version management and changelog generation
-
-## Performance & Scalability Testing
-
-- [ ] Benchmark performance with large Markdown files
-- [ ] Test memory usage with multiple code executions
-- [ ] Measure startup time impact
-- [ ] Profile CPU usage during code execution
-- [ ] Test with various PHP versions and configurations

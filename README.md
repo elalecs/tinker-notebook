@@ -2,130 +2,136 @@
 
 A lightweight VS Code extension that enables interactive PHP and Laravel Tinker code execution directly in Markdown files. Tinker Notebook allows you to write, document, and execute PHP code within Markdown code blocks, providing immediate feedback without leaving your editor.
 
-## Estado Actual
+## Current Status
 
-- ✅ **Fase 1**: Ejecución básica de código PHP desde archivos Markdown
-- ✅ **Fase 2**: Ejecución diferenciada PHP/Tinker con detección de proyectos Laravel
-- ✅ **Fase 3**: Gestión del estado de bloques de código con almacenamiento persistente
-- ✅ **Fase 5**: Formateo mejorado de salida para diferentes tipos de datos
+- ✅ **Phase 1**: Basic PHP code execution from Markdown files
+- ✅ **Phase 2**: Differentiated PHP/Tinker execution with Laravel project detection
+- ✅ **Phase 3**: Code block state management with persistent storage
+- ✅ **Phase 4**: Enhanced output formatting for different data types
+- 🔄 **Phase 5**: Tinker Output Panel with WebView interface
 
-## Características Implementadas
+## Implemented Features
 
-- **Ejecución de Código**
-  - Ejecución de bloques de código PHP (```php) usando el binario PHP del sistema
-  - Ejecución de bloques Tinker (```tinker) usando php artisan tinker
-  - Detección automática de proyectos Laravel en el workspace
-  - Creación de proyectos Laravel temporales cuando sea necesario
+- **Code Execution**
+  - Execution of PHP code blocks (```php) using the system PHP binary
+  - Execution of Tinker blocks (```tinker) using php artisan tinker
+  - Automatic detection of Laravel projects in the workspace
+  - Creation of temporary Laravel projects when necessary
 
-- **Gestión de Estado**
-  - Sistema de identificación de bloques con IDs personalizados (```php:id, ```tinker:id)
-  - Seguimiento del estado de ejecución con indicadores visuales:
-    - ▶️ No ejecutado
-    - ⏹️ Ejecutando/parar ejecución
-    - 🟢 Ejecutado correctamente
-    - ❌ Error en ejecución
-  - Persistencia del estado entre sesiones del editor
+- **State Management**
+  - Block identification system with custom IDs (```php:id, ```tinker:id)
+  - Execution state tracking with visual indicators:
+    - ▶️ Not executed
+    - ⏹️ Running/stop execution
+    - 🟢 Successfully executed
+    - ❌ Execution error
+  - State persistence between editor sessions
 
-- **Referencia de Resultados**
-  - Sistema de referencia entre bloques mediante sintaxis $tinker_outputs.id
-  - Detección y prevención de referencias circulares
-  - Información detallada al pasar el cursor sobre los bloques
+- **Result References**
+  - Block reference system using $tinker_outputs.id syntax
+  - Detection and prevention of circular references
+  - Detailed information when hovering over blocks
 
-- **Formateo de Salida**
-  - Detección inteligente de tipos de salida (JSON, arrays, objetos, etc.)
-  - Formateadores para diferentes tipos de datos con resaltado de sintaxis
-  - Secciones colapsables para mejorar la legibilidad
-  - Funcionalidad de exportación en varios formatos (JSON, CSV, Texto)
+- **Output Formatting**
+  - Intelligent detection of output types (JSON, arrays, objects, etc.)
+  - Formatters for different data types with syntax highlighting
+  - Collapsible sections to improve readability
+  - Export functionality in various formats (JSON, CSV, Text)
 
-## Requisitos
+## Requirements
 
-- PHP 7.4+ (requerido)
-- Composer & Laravel (opcional para bloques Tinker)
+- PHP 7.4+ (required)
+- Composer & Laravel (optional for Tinker blocks)
 
-## Instalación
+## Installation
 
-### Desde VS Code Marketplace (Próximamente)
+### From VS Code Marketplace (Coming Soon)
 
-1. Abre VS Code
-2. Ve a Extensiones (Ctrl+Shift+X o Cmd+Shift+X)
-3. Busca "Tinker Notebook"
-4. Haz clic en Instalar
-5. Recarga VS Code cuando se te solicite
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X or Cmd+Shift+X)
+3. Search for "Tinker Notebook"
+4. Click Install
+5. Reload VS Code when prompted
 
-### Instalación Manual
+### Manual Installation
 
-1. Descarga el archivo `.vsix` desde la [página de releases de GitHub](https://github.com/elalecs/tinker-notebook/releases)
-2. En VS Code, ve a Extensiones (Ctrl+Shift+X)
-3. Haz clic en el menú "..." en la parte superior derecha del panel de Extensiones
-4. Selecciona "Install from VSIX..."
-5. Navega y selecciona el archivo `.vsix` descargado
-6. Recarga VS Code cuando se te solicite
+1. Download the `.vsix` file from the [GitHub releases page](https://github.com/elalecs/tinker-notebook/releases)
+2. In VS Code, go to Extensions (Ctrl+Shift+X)
+3. Click on the "..." menu in the top right of the Extensions panel
+4. Select "Install from VSIX..."
+5. Navigate to and select the downloaded `.vsix` file
+6. Reload VS Code when prompted
 
-## Uso
+## Usage
 
-1. Crea o abre un archivo Markdown (`.md`)
-2. Añade un bloque de código PHP usando triple backticks y el identificador de lenguaje `php` o `tinker`:
+1. Create or open a Markdown file (`.md`)
+2. Add a PHP code block using triple backticks and the language identifier `php` or `tinker`:
 
 ```markdown
-# Mis Notas de PHP
+# My PHP Notes
 
-Aquí hay un ejemplo simple de PHP:
+Here's a simple PHP example:
 
 ```php
 $greeting = "Hello, World!";
 echo $greeting;
 
-// También puedes usar variables
+// You can also use variables
 $name = "Tinker Notebook";
 echo "Welcome to {$name}!";
 ```
 
-```tinker:mi_consulta
-// Este bloque se ejecutará con Laravel Tinker
+```tinker:my_query
+// This block will run with Laravel Tinker
 $users = \App\Models\User::all();
 return $users;
 ```
 
-// Puedes referenciar resultados anteriores
+// You can reference previous results
 ```php
-$data = $tinker_outputs.mi_consulta;
+$data = $tinker_outputs.my_query;
 var_dump(count($data));
 ```
 ```
 
-3. Coloca el cursor dentro del bloque de código
-4. Presiona Ctrl+Enter (Cmd+Enter en Mac) para ejecutar el código
-5. Visualiza los resultados en el panel Output
+3. Place the cursor inside the code block
+4. Press Ctrl+Enter (Cmd+Enter on Mac) to execute the code
+5. View the results in the Output panel
 
-## Configuración de la Extensión
+## Extension Configuration
 
-Esta extensión contribuye con las siguientes configuraciones:
+This extension contributes the following settings:
 
-* `tinker-notebook.phpPath`: Ruta al ejecutable de PHP (predeterminado: "php")
-* `tinker-notebook.timeout`: Tiempo de espera para la ejecución de PHP en milisegundos (predeterminado: 30000)
-* `tinker-notebook.laravelPath`: Ruta al proyecto Laravel para ejecución de Tinker (opcional)
+* `tinker-notebook.phpPath`: Path to the PHP executable (default: "php")
+* `tinker-notebook.timeout`: Timeout for PHP execution in milliseconds (default: 30000)
+* `tinker-notebook.laravelPath`: Path to the Laravel project for Tinker execution (optional)
 
-## Atajos de Teclado
+## Keyboard Shortcuts
 
-* `Ctrl+Enter` (Windows/Linux) o `Cmd+Enter` (Mac): Ejecutar el bloque de código en la posición actual del cursor
+* `Ctrl+Enter` (Windows/Linux) or `Cmd+Enter` (Mac): Execute the code block at the current cursor position
 
-## Próximas Características
+## Upcoming Features
 
-Estamos trabajando actualmente en:
+### Tinker Output Panel (Coming Soon)
 
-- **Fase 6**: Biblioteca de snippets
-- **Fase 7**: Características avanzadas como directivas especiales y formateadores personalizados
+We're working on a dedicated Tinker Output panel that will provide an enhanced experience for viewing execution results:
 
-Consulta el archivo [TODO.md](TODO.md) para ver todas las características planificadas y mejoras.
+- **WebView Interface**: A dedicated panel with syntax highlighting for different output types
+- **Interactive Export**: Buttons to export results as JSON, CSV, TXT, or copy to clipboard
+- **Collapsible Sections**: Easily navigate complex data structures with expandable/collapsible sections
+- **Real-time Updates**: See execution progress and results in real-time
 
-## Contribuir
+Check the [TODO.md](TODO.md) file to see all planned features and improvements.
 
-¡Las contribuciones son bienvenidas! Por favor, consulta [CONTRIBUTING.md](CONTRIBUTING.md) para obtener información detallada sobre cómo configurar el entorno de desarrollo y contribuir al proyecto.
+## Contributing
 
-## Licencia
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed information on how to set up the development environment and contribute to the project.
 
-Esta extensión está licenciada bajo la Licencia MIT.
+## License
 
-## Documentación
-- [Guía de Contribución](CONTRIBUTING.md)
-- [Plan de Desarrollo](TODO.md)
+This extension is licensed under the GPL-3.0 License.
+
+## Documentation
+- [User Guide](docs/user-guide.md)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Development Plan](TODO.md)
