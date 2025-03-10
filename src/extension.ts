@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { CodeBlockDetector, CodeBlock } from './codeBlock/detector';
-import { CodeBlockDecorator } from './codeBlock/decorator';
+import { CodeBlockCodeLensProvider } from './codeBlock/codeLensProvider';
 import { CodeExecutor } from './execution/executor';
 import { TinkerExecutor } from './execution/tinkerExecutor';
 import { LaravelDetector } from './laravel/detector';
@@ -61,7 +61,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Initialize core services
     const codeBlockDetector = new CodeBlockDetector();
-    const codeBlockDecorator = new CodeBlockDecorator(blockStateManager);
+    const codeLensProvider = new CodeBlockCodeLensProvider(codeBlockDetector, blockStateManager);
     const codeExecutor = new CodeExecutor(outputChannel, diagnosticCollection);
     const tinkerExecutor = new TinkerExecutor(
         outputChannel, 
@@ -71,24 +71,32 @@ export function activate(context: vscode.ExtensionContext) {
         processExecutor
     );
     
+    // Register CodeLens provider
+    const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
+        { language: 'markdown' },
+        codeLensProvider
+    );
+    context.subscriptions.push(codeLensProviderDisposable);
+    
     // Clean up temporary files on startup
     FileUtils.cleanupTempFiles();
     
-    // Update decorations when the active editor changes
+    // Refresh CodeLens when the active editor changes
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
-            if (editor) {
-                updateDecorations(editor);
+            if (editor && editor.document.languageId === 'markdown') {
+                // Refresh all CodeLenses in the document
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', editor.document.uri);
             }
         })
     );
     
-    // Update decorations when the document changes
+    // Refresh CodeLens when the document changes
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event => {
-            const editor = vscode.window.activeTextEditor;
-            if (editor && event.document === editor.document) {
-                updateDecorations(editor);
+            if (event.document.languageId === 'markdown') {
+                // Refresh all CodeLenses in the edited document
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', event.document.uri);
             }
         })
     );
@@ -119,9 +127,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     
-    // Register command to execute code block from decorator
-    const executeFromDecoratorCommand = vscode.commands.registerCommand(
-        'tinker-notebook.executeFromDecorator',
+    // Register command to execute code block from CodeLens
+    const executeFromCodeLensCommand = vscode.commands.registerCommand(
+        'tinker-notebook.executeFromCodeLens',
         async (blockId: string) => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
@@ -134,6 +142,9 @@ export function activate(context: vscode.ExtensionContext) {
             
             if (codeBlock) {
                 await executeCodeBlock(codeBlock, document, editor);
+                
+                // Refresh CodeLens to update the status
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri);
             }
         }
     );
@@ -142,8 +153,9 @@ export function activate(context: vscode.ExtensionContext) {
     async function executeCodeBlock(codeBlock: CodeBlock, document: vscode.TextDocument, editor: vscode.TextEditor) {
         try {
             // Set block status to executing
-            codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Executing);
-            updateDecorations(editor);
+            blockStateManager.setBlockState(codeBlock.id, BlockState.Executing);
+            // Refresh CodeLens to update the status
+            vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri);
             
             // Update status bar to show executing
             statusBarItem.text = "$(sync~spin) Executing code...";
@@ -179,11 +191,11 @@ export function activate(context: vscode.ExtensionContext) {
             
             // Store the result and update block state
             if (result.error) {
-                codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Error, result);
+                blockStateManager.setBlockState(codeBlock.id, BlockState.Error, result);
                 statusBarItem.text = "$(error) Execution failed";
                 statusBarItem.tooltip = `Error: ${String(result.error)}`;
             } else {
-                codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Success, result);
+                blockStateManager.setBlockState(codeBlock.id, BlockState.Success, result);
                 statusBarItem.text = "$(check) Execution successful";
                 statusBarItem.tooltip = "Code executed successfully";
                 
@@ -199,13 +211,14 @@ export function activate(context: vscode.ExtensionContext) {
                 statusBarItem.tooltip = "Tinker Notebook is ready";
             }, 3000);
             
-            // Update decorations
-            updateDecorations(editor);
+            // Refresh CodeLens to update the status
+            vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri);
             
         } catch (error) {
             // Set block status to error
-            codeBlockDecorator.setBlockState(codeBlock.id, BlockState.Error);
-            updateDecorations(editor);
+            blockStateManager.setBlockState(codeBlock.id, BlockState.Error);
+            // Refresh CodeLens to update the status
+            vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri);
             
             // Update status bar to show error
             statusBarItem.text = "$(error) Execution failed";
@@ -227,19 +240,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
     
-    // Function to update decorations in the editor
-    function updateDecorations(editor: vscode.TextEditor) {
-        if (editor.document.languageId !== 'markdown') {
-            return;
-        }
-        
-        const codeBlocks = codeBlockDetector.findCodeBlocks(editor.document);
-        codeBlockDecorator.updateDecorations(editor, codeBlocks);
-    }
-    
-    // Initialize decorations for the active editor
-    if (vscode.window.activeTextEditor) {
-        updateDecorations(vscode.window.activeTextEditor);
+    // Refresh CodeLens for the active editor
+    if (vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.languageId === 'markdown') {
+        vscode.commands.executeCommand('vscode.executeCodeLensProvider', vscode.window.activeTextEditor.document.uri);
     }
     
     // Register command to show output channel
@@ -254,11 +257,11 @@ export function activate(context: vscode.ExtensionContext) {
     const clearBlockStatesCommand = vscode.commands.registerCommand(
         'tinker-notebook.clearBlockStates',
         () => {
-            codeBlockDecorator.resetAllBlockStates();
+            blockStateManager.clearAllStates();
             
-            // Update decorations for active editor
-            if (vscode.window.activeTextEditor) {
-                updateDecorations(vscode.window.activeTextEditor);
+            // Refresh CodeLens for active editor
+            if (vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.languageId === 'markdown') {
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', vscode.window.activeTextEditor.document.uri);
             }
             
             vscode.window.showInformationMessage('All code block states have been reset');
@@ -296,14 +299,13 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Add commands to subscriptions
     context.subscriptions.push(executeCodeBlockCommand);
-    context.subscriptions.push(executeFromDecoratorCommand);
+    context.subscriptions.push(executeFromCodeLensCommand);
     context.subscriptions.push(showOutputChannelCommand);
     context.subscriptions.push(clearBlockStatesCommand);
     context.subscriptions.push(exportAsJsonCommand);
     context.subscriptions.push(exportAsCsvCommand);
     context.subscriptions.push(exportAsTextCommand);
     context.subscriptions.push(toggleCollapsibleCommand);
-    context.subscriptions.push(codeBlockDecorator);
 }
 
 // Extension deactivation function

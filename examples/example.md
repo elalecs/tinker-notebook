@@ -6,13 +6,17 @@ This is an example Markdown file to demonstrate the functionality of the Tinker 
 
 Here's a simple PHP example that you can run:
 
-```php
+```php:abc
 $greeting = "Hello, World!";
 echo $greeting;
 
 // You can also use variables
 $name = "Tinker Notebook";
 echo "\nWelcome to {$name}!";
+```
+
+```php
+echo $tinker_outputs.abc;
 ```
 
 ## Working with Arrays

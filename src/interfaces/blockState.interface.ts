@@ -57,6 +57,11 @@ export interface IBlockStateManager {
     getAllStates(): Map<string, BlockStateEntry>;
     
     /**
+     * Clear all block states
+     */
+    clearAllStates(): void;
+    
+    /**
      * Save state to persistent storage
      */
     saveState(): Promise<void>;

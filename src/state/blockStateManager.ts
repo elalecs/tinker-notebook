@@ -86,6 +86,17 @@ export class BlockStateManager implements IBlockStateManager {
     }
     
     /**
+     * Clear all block states
+     */
+    public clearAllStates(): void {
+        this.states.clear();
+        this.results.clear();
+        this.saveState().catch(err => {
+            console.error('Failed to save block state after clearing:', err);
+        });
+    }
+    
+    /**
      * Save state to persistent storage
      */
     public async saveState(): Promise<void> {
