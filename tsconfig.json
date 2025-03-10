@@ -17,7 +17,6 @@
 		"node_modules",
 		".vscode-test",
 		"src/test/suite/execution/tinkerExecutor.test.ts",
-		"src/test/suite/integration/phase2.test.ts",
 		"src/test/suite/laravel/detector.test.ts"
 	]
 }
