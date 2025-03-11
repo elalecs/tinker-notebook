@@ -67,7 +67,7 @@ A lightweight VS Code extension that enables interactive PHP and Laravel Tinker 
 1. Create or open a Markdown file (`.md`)
 2. Add a PHP code block using triple backticks and the language identifier `php` or `tinker`:
 
-```markdown
+````markdown
 # My PHP Notes
 
 Here's a simple PHP example:
@@ -92,7 +92,7 @@ return $users;
 $data = $tinker_outputs.my_query;
 var_dump(count($data));
 ```
-```
+````
 
 3. Place the cursor inside the code block
 4. Press Ctrl+Enter (Cmd+Enter on Mac) to execute the code

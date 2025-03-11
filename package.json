@@ -1,7 +1,7 @@
 {
   "name": "tinker-notebook",
   "displayName": "Tinker Notebook",
-  "description": "A simple like Jupyter Notebook like for PHP/Tinker",
+  "description": "Transform Markdown files into interactive PHP notebooks with Laravel Tinker integration, persistent state management, and rich output formatting",
   "version": "0.1.0",
   "publisher": "elalecs",
   "author": {
