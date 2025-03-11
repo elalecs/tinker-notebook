@@ -149,6 +149,28 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     
+    // Register command to execute code block from decorator
+    const executeFromDecoratorCommand = vscode.commands.registerCommand(
+        'tinker-notebook.executeFromDecorator',
+        async (blockId: string) => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                return;
+            }
+            
+            const document = editor.document;
+            const codeBlocks = codeBlockDetector.findCodeBlocks(document);
+            const codeBlock = codeBlocks.find(block => block.id === blockId);
+            
+            if (codeBlock) {
+                await executeCodeBlock(codeBlock, document, editor);
+                
+                // Refresh CodeLens to update the status
+                vscode.commands.executeCommand('vscode.executeCodeLensProvider', document.uri);
+            }
+        }
+    );
+    
     // Register command to execute code block and copy result to clipboard
     const executeAndCopyFromCodeLensCommand = vscode.commands.registerCommand(
         'tinker-notebook.executeAndCopyFromCodeLens',
@@ -343,6 +365,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Add commands to subscriptions
     context.subscriptions.push(executeCodeBlockCommand);
     context.subscriptions.push(executeFromCodeLensCommand);
+    context.subscriptions.push(executeFromDecoratorCommand);
     context.subscriptions.push(executeAndCopyFromCodeLensCommand);
     context.subscriptions.push(showOutputChannelCommand);
     context.subscriptions.push(clearBlockStatesCommand);
